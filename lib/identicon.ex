@@ -1,7 +1,14 @@
 defmodule Identicon do
   def from_string(str) do
     hash = :crypto.hash(:md5, str) |> :binary.bin_to_list()
-    generate_image(color(hash), coords(hash)) |> save(filename(str))
+    generate_image(color(hash), coords(hash))
+  end
+
+  def filename(str) do
+    case String.trim(str) do
+      "" -> "_.png"
+      str -> "#{str}.png"
+    end
   end
 
   defp color([r, g, b | _]) do
@@ -40,11 +47,4 @@ defmodule Identicon do
 
     :egd.render(image)
   end
-
-  defp save(image, filename) do
-    File.write(filename, image)
-  end
-
-  defp filename(""), do: "_.png"
-  defp filename(str), do: "#{str}.png"
 end

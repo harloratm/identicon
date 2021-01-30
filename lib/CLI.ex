@@ -1,6 +1,7 @@
 defmodule Identicon.CLI do
   def main(args) do
-    {_, input, _} = OptionParser.parse(args, strict: [])
-    Identicon.from_string(input)
+    {_, [str | _], _} = OptionParser.parse(args, strict: [])
+
+    File.write(Identicon.filename(str), Identicon.from_string(str))
   end
 end

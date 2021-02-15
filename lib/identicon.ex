@@ -4,13 +4,6 @@ defmodule Identicon do
     generate_image(color(hash), coords(hash))
   end
 
-  def filename(str) do
-    case String.trim(str) do
-      "" -> "_.png"
-      str -> "#{str}.png"
-    end
-  end
-
   defp color([r, g, b | _]) do
     {r, g, b}
   end

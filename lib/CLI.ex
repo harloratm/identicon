@@ -10,14 +10,12 @@ defmodule Identicon.CLI do
         aliases: [h: :help, o: :output]
       )
 
-  defp clean(parsed) do
-    case(parsed) do
-      {[help: true], _, _} -> {:ok, :usage}
-      {[help: true, output: _], _, _} -> {:ok, :usage}
-      {[output: _, help: true], _, _} -> {:ok, :usage}
-      {_, [], _} -> {:error, "An input string is needed."}
-      {_, args, _} when length(args) != 1 -> {:error, "Only one input string is allowed."}
-      parsed -> {:ok, parsed}
+  defp clean({switches, args, _} = parsed) do
+    cond do
+      Keyword.get(switches, :help) -> {:ok, :usage}
+      args == [] -> {:error, "An input string is needed."}
+      length(args) != 1 -> {:error, "Only one input string is allowed."}
+      true -> {:ok, parsed}
     end
   end
 

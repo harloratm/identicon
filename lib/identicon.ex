@@ -1,40 +1,38 @@
 defmodule Identicon do
-  def from_string(str) do
+  def from_string(str, size \\ 250) do
     hash = :crypto.hash(:md5, str) |> :binary.bin_to_list()
-    generate_image(color(hash), coords(hash))
+    generate_image(color(hash), coords(hash, size / 5), size)
   end
 
-  defp color([r, g, b | _]) do
-    {r, g, b}
-  end
+  defp color([r, g, b | _]), do: {r, g, b}
 
-  defp coords(hash) do
-    hash
-    |> Enum.chunk_every(3, 3, :discard)
-    |> Enum.map(&mirror/1)
-    |> List.flatten()
-    |> Enum.with_index()
-    |> Enum.filter(fn {v, _} = _x -> rem(v, 2) === 0 end)
-    |> Enum.map(&square/1)
-  end
+  defp coords(hash, u),
+    do:
+      hash
+      |> Enum.chunk_every(3, 3, :discard)
+      |> Enum.map(&mirror/1)
+      |> List.flatten()
+      |> Enum.with_index()
+      |> Enum.filter(fn {v, _} = _x -> rem(v, 2) === 0 end)
+      |> Enum.map(&square(&1, u))
 
-  defp mirror([one, two | _] = row) do
-    row ++ [two, one]
-  end
+  defp mirror([one, two | _] = row), do: row ++ [two, one]
 
-  defp square({_, i}) do
-    x = rem(i, 5) * 50
-    y = div(i, 5) * 50
+  defp square({_, i}, u) do
+    x = rem(i, 5) * u
+    y = div(i, 5) * u
     top_left = {x, y}
-    bottom_right = {x + 50, y + 50}
+    bottom_right = {x + u, y + u}
     {top_left, bottom_right}
   end
 
-  defp generate_image(color, coords) do
-    image = :egd.create(250, 250)
+  defp generate_image(color, coords, size) do
+    image = :egd.create(size, size)
     fill = :egd.color(color)
 
-    Enum.each(coords, fn {start, stop} ->
+    Enum.each(coords, fn {{x1, y1}, {x2, y2}} ->
+      start = {round(x1), round(y1)}
+      stop = {round(x2), round(y2)}
       :egd.filledRectangle(image, start, stop, fill)
     end)
 

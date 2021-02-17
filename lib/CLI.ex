@@ -6,8 +6,8 @@ defmodule Identicon.CLI do
   defp parse(args),
     do:
       OptionParser.parse(args,
-        strict: [help: :boolean, output: :string],
-        aliases: [h: :help, o: :output]
+        strict: [help: :boolean, output: :string, size: :integer],
+        aliases: [h: :help, o: :output, s: :size]
       )
 
   defp clean({switches, args, _} = parsed) do
@@ -33,7 +33,7 @@ defmodule Identicon.CLI do
   end
 
   defp save(input, opts) do
-    image = Identicon.from_string(input)
+    image = Identicon.from_string(input, size(opts))
     filename = outfile(opts, input)
     File.write(filename, image)
   end
@@ -43,8 +43,17 @@ defmodule Identicon.CLI do
     "#{basename}.png"
   end
 
+  defp size(opts), do: Keyword.get(opts, :size, 250)
+
   defp warn_invalid(args),
-    do: Enum.map(args, fn {o, _} -> IO.puts(:stderr, "WARNING: option #{o} is unknown.") end)
+    do:
+      Enum.map(
+        args,
+        fn arg ->
+          o = Enum.join(Tuple.to_list(arg), " ")
+          IO.puts(:stderr, "WARNING: option #{o} is wrong or unknown.")
+        end
+      )
 
   defp usage,
     do:
@@ -53,6 +62,7 @@ defmodule Identicon.CLI do
       Options:
         -o FILE, --output FILE      The generated image filename (the .png extension is
                                     automatically appended).
+        -s SIZE, --size SIZE        The size of the square image (defaults to 250).
         -h, --help                  Print this message and exit.
       """)
 end

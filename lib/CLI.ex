@@ -27,10 +27,14 @@ defmodule Identicon.CLI do
   defp run({:ok, :usage}), do: usage()
 
   defp run({:ok, {_, input, invalid}}) do
-    Enum.map(invalid, fn {o, _} -> IO.puts(:stderr, "WARNING: option #{o} is unknown.") end)
-    File.write("#{input}.png", Identicon.from_string(input))
+    warn_invalid(invalid)
+    image = Identicon.from_string(input)
+    File.write("#{input}.png", image)
     IO.puts("Done. #{input}.png saved.")
   end
+
+  defp warn_invalid(args),
+    do: Enum.map(args, fn {o, _} -> IO.puts(:stderr, "WARNING: option #{o} is unknown.") end)
 
   defp usage,
     do:

@@ -100,21 +100,4 @@ defmodule IdenticonTest do
 
     assert expected == got
   end
-
-  test "Append .png to the input string to generate the output filename" do
-    expected = "elixir.png"
-    got = Identicon.filename("elixir")
-
-    assert expected == got
-  end
-
-  test "Use _.png as the output filename if the input string is empty" do
-    expected = "_.png"
-
-    got = Identicon.filename("")
-    assert expected == got
-
-    got = Identicon.filename("   ")
-    assert expected == got
-  end
 end

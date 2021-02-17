@@ -51,7 +51,8 @@ defmodule Identicon.CLI do
       IO.puts("""
       Usage: identicon [options] WORD
       Options:
-        -o FILE, --output FILE      The generated image filename.
+        -o FILE, --output FILE      The generated image filename (the .png extension is
+                                    automatically appended).
         -h, --help                  Print this message and exit.
       """)
 end

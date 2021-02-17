@@ -26,11 +26,21 @@ defmodule Identicon.CLI do
 
   defp run({:ok, :usage}), do: usage()
 
-  defp run({:ok, {_, input, invalid}}) do
+  defp run({:ok, {opts, [input], invalid}}) do
     warn_invalid(invalid)
+    save(input, opts)
+    IO.puts("Done.")
+  end
+
+  defp save(input, opts) do
     image = Identicon.from_string(input)
-    File.write("#{input}.png", image)
-    IO.puts("Done. #{input}.png saved.")
+    filename = outfile(opts, input)
+    File.write(filename, image)
+  end
+
+  defp outfile(opts, input) do
+    basename = Keyword.get(opts, :output, "#{input}")
+    "#{basename}.png"
   end
 
   defp warn_invalid(args),

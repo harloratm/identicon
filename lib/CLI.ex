@@ -32,14 +32,12 @@ defmodule Identicon.CLI do
     IO.puts("Done. #{input}.png saved.")
   end
 
-  defp(usage()) do
-    s = """
-    Usage: identicon [options] WORD
-    Options:
-      -o FILE, --output FILE      The generated image filename.
-      -h, --help                  Print this message and exit.
-    """
-
-    IO.puts(s)
-  end
+  defp usage,
+    do:
+      IO.puts("""
+      Usage: identicon [options] WORD
+      Options:
+        -o FILE, --output FILE      The generated image filename.
+        -h, --help                  Print this message and exit.
+      """)
 end

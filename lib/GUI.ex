@@ -3,19 +3,24 @@ defmodule Identicon.GUI do
 
   use Bitwise, only_operators: true
 
-  def start_link() do
-    :wx_object.start_link(__MODULE__, [], [])
+  def main(_) do
+    {:wx_ref, _, _, pid} = start_link()
+    ref = Process.monitor(pid)
+
+    receive do
+      {:DOWN, ^ref, _, _, _} -> :ok
+    end
   end
 
-  def init(_args \\ []) do
+  def start_link(), do: :wx_object.start_link(__MODULE__, [], [])
+
+  def init(_) do
     wx = :wx.new()
     win = :wxFrame.new(wx, -1, "Identicon generator")
 
     input_text = :wxTextCtrl.new(win, -1, value: "identicon", size: {500, -1})
     generate_button = :wxButton.new(win, -1, label: "Make identicon")
-    image = :wxImage.new("lenin.png", [])
-    bitmap = :wxBitmap.new(:wxImage.scale(image, 250, 250, quality: 0))
-    static_bitmap = :wxStaticBitmap.new(win, -1, bitmap)
+    static_bitmap = :wxStaticBitmap.new(win, -1, bitmap_from_text_ctrl(input_text))
 
     sizer_main = :wxBoxSizer.new(8)
     sizer_top = :wxBoxSizer.new(4)
@@ -44,28 +49,16 @@ defmodule Identicon.GUI do
         {:wx, _, _, _, {:wxCommand, :command_button_clicked, _, _, _}},
         %{input_control: input_text, image_control: static_bitmap} = state
       ) do
-    img_data = input_text |> :wxTextCtrl.getValue() |> Identicon.from_string()
-    tmp_dir = System.tmp_dir!()
-    tmp_filename = Path.join(tmp_dir, "identicon.png")
+    :wxStaticBitmap.setBitmap(static_bitmap, bitmap_from_text_ctrl(input_text))
+    {:noreply, state}
+  end
+
+  def handle_event(_, state), do: {:noreply, state}
+
+  defp bitmap_from_text_ctrl(text_ctrl) do
+    img_data = :wxTextCtrl.getValue(text_ctrl) |> Identicon.from_string()
+    tmp_filename = System.tmp_dir!() |> Path.join("identicon.png")
     File.write(tmp_filename, img_data)
-    image = :wxImage.new(tmp_filename)
-    bitmap = :wxBitmap.new(image)
-    :wxStaticBitmap.setBitmap(static_bitmap, bitmap)
-
-    {:noreply, state}
-  end
-
-  def handle_event(event, state) do
-    IO.inspect(event)
-    {:noreply, state}
-  end
-
-  def main(_) do
-    {:wx_ref, _, _, pid} = start_link()
-    ref = Process.monitor(pid)
-
-    receive do
-      {:DOWN, ^ref, _, _, _} -> :ok
-    end
+    :wxImage.new(tmp_filename) |> :wxBitmap.new()
   end
 end

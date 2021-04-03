@@ -1,6 +1,7 @@
 defmodule Identicon.GUI do
   @behaviour :wx_object
 
+  import WxConstants
   use Bitwise, only_operators: true
 
   def main(_) do
@@ -18,20 +19,28 @@ defmodule Identicon.GUI do
     wx = :wx.new()
     win = :wxFrame.new(wx, -1, "Identicon generator")
 
-    input_text = :wxTextCtrl.new(win, -1, value: "identicon", size: {500, -1})
-    generate_button = :wxButton.new(win, -1, label: "Make identicon")
+    input_text = :wxTextCtrl.new(win, -1, value: "identicon", size: {200, -1})
+    generate_button = :wxButton.new(win, -1, label: "generate identicon")
     static_bitmap = :wxStaticBitmap.new(win, -1, bitmap_from_text_ctrl(input_text))
 
     sizer_main = :wxBoxSizer.new(8)
     sizer_top = :wxBoxSizer.new(4)
 
-    :wxSizer.add(sizer_top, input_text, flag: 64 ||| 16 ||| 128 ||| 32, border: 10, proportion: 1)
-    :wxSizer.add(sizer_top, generate_button, flag: 64 ||| 32 ||| 128, border: 10)
+    :wxSizer.add(sizer_top, input_text,
+      border: 10,
+      flag: wxTOP() ||| wxRIGHT() ||| wxBOTTOM() ||| wxLEFT()
+    )
+
+    :wxSizer.add(sizer_top, generate_button,
+      border: 10,
+      flag: wxTOP() ||| wxRIGHT() ||| wxBOTTOM()
+    )
+
     :wxSizer.add(sizer_main, sizer_top)
 
     :wxSizer.add(sizer_main, static_bitmap,
-      flag: 64 ||| 16 ||| 128 ||| 32,
       border: 10,
+      flag: wxRIGHT() ||| wxBOTTOM() ||| wxLEFT(),
       proportion: 1
     )
 

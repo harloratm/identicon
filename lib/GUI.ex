@@ -1,6 +1,5 @@
 defmodule Identicon.GUI do
   @behaviour :wx_object
-  @default_input_string "identicon"
 
   use Bitwise, only_operators: true
 
@@ -12,7 +11,7 @@ defmodule Identicon.GUI do
     wx = :wx.new()
     win = :wxFrame.new(wx, -1, "Identicon generator")
 
-    input_text = :wxTextCtrl.new(win, -1, value: @default_input_string, size: {500, -1})
+    input_text = :wxTextCtrl.new(win, -1, value: "identicon", size: {500, -1})
     generate_button = :wxButton.new(win, -1, label: "Make identicon")
     image = :wxImage.new("lenin.png", [])
     bitmap = :wxBitmap.new(:wxImage.scale(image, 250, 250, quality: 0))
@@ -60,11 +59,9 @@ defmodule Identicon.GUI do
     IO.inspect(event)
     {:noreply, state}
   end
-end
 
-defmodule Identicon.GUI.App do
-  def main() do
-    {:wx_ref, _, _, pid} = Identicon.GUI.start_link()
+  def main(_) do
+    {:wx_ref, _, _, pid} = start_link()
     ref = Process.monitor(pid)
 
     receive do

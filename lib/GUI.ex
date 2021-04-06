@@ -22,11 +22,6 @@ defmodule Identicon.GUI do
     :wxWindow.setSizer(win, layout)
     :wxSizer.setSizeHints(layout, win)
     :wxFrame.show(win)
-
-    # TODO Implement these
-    :wxButton.disable(state.widgets.bt_save)
-    :wxButton.disable(state.widgets.bt_quit)
-
     {win, state}
   end
 
@@ -59,11 +54,18 @@ defmodule Identicon.GUI do
     widgets = %{
       tc_input: :wxTextCtrl.new(win, -1, value: "identicon"),
       bt_update: :wxButton.new(win, -1, label: "Update image"),
-      bt_save: :wxButton.new(win, -1, label: "Save image"),
-      bt_quit: :wxButton.new(win, -1, label: "Quit")
+      bt_save: :wxButton.new(win, 5003),
+      bt_quit: :wxButton.new(win, 5006),
+      dg_file:
+        :wxFileDialog.new(win,
+          message: "Save PNG file",
+          style: wxFD_SAVE() ||| wxFD_OVERWRITE_PROMPT()
+        )
     }
 
     :wxButton.connect(widgets.bt_update, :command_button_clicked)
+    :wxButton.connect(widgets.bt_save, :command_button_clicked)
+    :wxButton.connect(widgets.bt_quit, :command_button_clicked)
 
     Map.put(
       widgets,
@@ -73,14 +75,40 @@ defmodule Identicon.GUI do
   end
 
   def handle_event(
-        {:wx, _, _, _, {:wxCommand, :command_button_clicked, _, _, _}},
-        %{widgets: %{tc_input: tc_input, sb_image: sb_image}} = state
+        {:wx, _, clicked, _, {:wxCommand, :command_button_clicked, _, _, _}},
+        state
       ) do
-    :wxStaticBitmap.setBitmap(sb_image, generate_identicon(tc_input))
+    cond do
+      clicked == state.widgets.bt_quit -> quit(state)
+      clicked == state.widgets.bt_save -> save(state)
+      clicked == state.widgets.bt_update -> update(state)
+    end
+  end
+
+  def handle_event(event, state) do
+    IO.puts("Got this event:\n")
+    IO.inspect(event)
     {:noreply, state}
   end
 
-  def handle_event(_, state), do: {:noreply, state}
+  defp quit(state) do
+    {:stop, :normal, state}
+  end
+
+  defp save(state) do
+    if :wxFileDialog.showModal(state.widgets.dg_file) == wxID_OK() do
+      filename = :wxFileDialog.getPath(state.widgets.dg_file)
+      image = :wxTextCtrl.getValue(state.widgets.tc_input) |> Identicon.from_string()
+      File.write(filename, image)
+    end
+
+    {:noreply, state}
+  end
+
+  defp update(%{widgets: %{sb_image: sb_image, tc_input: tc_input}} = state) do
+    :wxStaticBitmap.setBitmap(sb_image, generate_identicon(tc_input))
+    {:noreply, state}
+  end
 
   defp generate_identicon(textctrl) do
     img_data = :wxTextCtrl.getValue(textctrl) |> Identicon.from_string()

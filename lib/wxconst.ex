@@ -142,6 +142,9 @@ defmodule WxConstants do
   def wxCLIP_CHILDREN, do: 4_194_304
   def wxTOPLEVEL_EX_DIALOG, do: 8
 
+  def wxID_OK, do: 5100
+  def wxID_CANCEL, do: 5101
+
   def wxDEFAULT_FRAME_STYLE,
     do:
       wxSYSTEM_MENU() ||| wxRESIZE_BORDER() ||| wxMINIMIZE_BOX() ||| wxMAXIMIZE_BOX() |||

@@ -1,5 +1,6 @@
 defmodule Identicon.GUI do
   @behaviour :wx_object
+  @default_input_string "identicon"
 
   import WxConstants
   use Bitwise, only_operators: true
@@ -17,8 +18,13 @@ defmodule Identicon.GUI do
 
   def init(_) do
     win = make_window("Identicon generator")
-    state = Map.put(%{}, :widgets, make_widgets(win))
+    state = %{widgets: make_widgets(win), input_string: @default_input_string}
     layout = arrange_widgets(state.widgets)
+
+    :wxTextCtrl.connect(state.widgets.tc_input, :command_text_updated)
+    :wxButton.connect(state.widgets.bt_save, :command_button_clicked)
+    :wxButton.connect(state.widgets.bt_quit, :command_button_clicked)
+
     :wxWindow.setSizer(win, layout)
     :wxSizer.setSizeHints(layout, win)
     :wxFrame.show(win)
@@ -28,7 +34,6 @@ defmodule Identicon.GUI do
   def arrange_widgets(widgets) do
     sz_main = :wxBoxSizer.new(wxVERTICAL())
     sz_toolbar = :wxBoxSizer.new(wxHORIZONTAL())
-    :wxBoxSizer.add(sz_toolbar, widgets.bt_update, proportion: 1, flag: wxEXPAND())
     :wxBoxSizer.add(sz_toolbar, widgets.bt_save, proportion: 1, flag: wxEXPAND())
     :wxBoxSizer.add(sz_toolbar, widgets.bt_quit, proportion: 1)
     :wxBoxSizer.add(sz_main, widgets.tc_input, border: 10, flag: wxEXPAND() ||| wxALL())
@@ -50,29 +55,18 @@ defmodule Identicon.GUI do
 
   def make_window(title), do: :wx.new() |> :wxFrame.new(-1, title)
 
-  def make_widgets(win) do
-    widgets = %{
-      tc_input: :wxTextCtrl.new(win, -1, value: "identicon"),
-      bt_update: :wxButton.new(win, -1, label: "Update image"),
-      bt_save: :wxButton.new(win, 5003),
+  def make_widgets(win),
+    do: %{
+      tc_input: :wxTextCtrl.new(win, -1, value: @default_input_string),
+      bt_save: :wxButton.new(win, -1, label: "Save as PNG file"),
       bt_quit: :wxButton.new(win, 5006),
+      sb_image: :wxStaticBitmap.new(win, -1, generate_image_from(@default_input_string)),
       dg_file:
         :wxFileDialog.new(win,
           message: "Save PNG file",
           style: wxFD_SAVE() ||| wxFD_OVERWRITE_PROMPT()
         )
     }
-
-    :wxButton.connect(widgets.bt_update, :command_button_clicked)
-    :wxButton.connect(widgets.bt_save, :command_button_clicked)
-    :wxButton.connect(widgets.bt_quit, :command_button_clicked)
-
-    Map.put(
-      widgets,
-      :sb_image,
-      :wxStaticBitmap.new(win, -1, generate_identicon(widgets.tc_input))
-    )
-  end
 
   def handle_event(
         {:wx, _, clicked, _, {:wxCommand, :command_button_clicked, _, _, _}},
@@ -81,8 +75,16 @@ defmodule Identicon.GUI do
     cond do
       clicked == state.widgets.bt_quit -> quit(state)
       clicked == state.widgets.bt_save -> save(state)
-      clicked == state.widgets.bt_update -> update(state)
     end
+  end
+
+  def handle_event(
+        {:wx, _, _, _, {:wxCommand, :command_text_updated, value, _, _}},
+        %{widgets: %{sb_image: sb_image}} = state
+      ) do
+    :wxStaticBitmap.setBitmap(sb_image, generate_image_from(value))
+    new_state = %{state | input_string: value}
+    {:noreply, new_state}
   end
 
   def handle_event(event, state) do
@@ -91,29 +93,26 @@ defmodule Identicon.GUI do
     {:noreply, state}
   end
 
-  defp quit(state) do
-    {:stop, :normal, state}
-  end
+  defp quit(state), do: {:stop, :normal, state}
 
   defp save(state) do
     if :wxFileDialog.showModal(state.widgets.dg_file) == wxID_OK() do
-      filename = :wxFileDialog.getPath(state.widgets.dg_file)
-      image = :wxTextCtrl.getValue(state.widgets.tc_input) |> Identicon.from_string()
-      File.write(filename, image)
+      save_to_file(:wxFileDialog.getPath(state.widgets.dg_file), state.input_string)
     end
 
     {:noreply, state}
   end
 
-  defp update(%{widgets: %{sb_image: sb_image, tc_input: tc_input}} = state) do
-    :wxStaticBitmap.setBitmap(sb_image, generate_identicon(tc_input))
-    {:noreply, state}
+  defp generate_image_from(input_string),
+    do: save_to_file(:temp, input_string) |> :wxImage.new() |> :wxBitmap.new()
+
+  defp save_to_file(:temp, input_string), do: save_to_file(temp_filename(), input_string)
+
+  defp save_to_file(filename, input_string) do
+    image = Identicon.from_string(input_string)
+    File.write(filename, image)
+    filename
   end
 
-  defp generate_identicon(textctrl) do
-    img_data = :wxTextCtrl.getValue(textctrl) |> Identicon.from_string()
-    tmp_filename = System.tmp_dir!() |> Path.join("identicon.png")
-    File.write(tmp_filename, img_data)
-    :wxImage.new(tmp_filename) |> :wxBitmap.new()
-  end
+  defp temp_filename(), do: System.tmp_dir!() |> Path.join("identicon.png")
 end

@@ -70,12 +70,19 @@ defmodule Identicon.GUI do
 
   def handle_event(
         {:wx, _, clicked, _, {:wxCommand, :command_button_clicked, _, _, _}},
-        state
+        %{widgets: %{bt_quit: clicked}} = state
+      ),
+      do: {:stop, :normal, state}
+
+  def handle_event(
+        {:wx, _, clicked, _, {:wxCommand, :command_button_clicked, _, _, _}},
+        %{widgets: %{bt_save: clicked}} = state
       ) do
-    cond do
-      clicked == state.widgets.bt_quit -> quit(state)
-      clicked == state.widgets.bt_save -> save(state)
+    if :wxFileDialog.showModal(state.widgets.dg_file) == wxID_OK() do
+      save_to_file(:wxFileDialog.getPath(state.widgets.dg_file), state.input_string)
     end
+
+    {:noreply, state}
   end
 
   def handle_event(
@@ -90,16 +97,6 @@ defmodule Identicon.GUI do
   def handle_event(event, state) do
     IO.puts("Got this event:\n")
     IO.inspect(event)
-    {:noreply, state}
-  end
-
-  defp quit(state), do: {:stop, :normal, state}
-
-  defp save(state) do
-    if :wxFileDialog.showModal(state.widgets.dg_file) == wxID_OK() do
-      save_to_file(:wxFileDialog.getPath(state.widgets.dg_file), state.input_string)
-    end
-
     {:noreply, state}
   end
 

@@ -2,6 +2,8 @@ defmodule Identicon.MixProject do
   use Mix.Project
 
   def project do
+    IO.puts(Application.get_env(:identicon, :life, ""))
+
     Keyword.merge(
       [
         app: :identicon,
